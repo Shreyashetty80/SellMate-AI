@@ -58,7 +58,7 @@ Show me products below ₹500
 2. Product Recommendations
 ```
 
-🛒 2. Product Recommendations
+##🛒 2. Product Recommendations
 
 Each product card provides:
 
@@ -73,7 +73,7 @@ Each product card provides:
 ✅ Availability
 🖼️ Product image
 🔗 Purchase link
-💰 3. Budget-Based Shopping
+##💰 3. Budget-Based Shopping
 
 Users can specify their maximum budget while searching for products.
 
@@ -83,7 +83,7 @@ Find wireless headphones under ₹2000
 
 The system identifies products that match the requested category and budget.
 
-⭐ 4. Product Comparison
+##⭐ 4. Product Comparison
 
 SellMate AI helps users compare products using important factors such as:
 
@@ -95,7 +95,7 @@ Shopping platform
 
 The assistant also highlights useful information such as the best price and best-rated product.
 
-🛍️ 5. Buy Now
+##🛍️ 5. Buy Now
 
 For products available from external shopping platforms, users can click:
 
@@ -103,7 +103,7 @@ For products available from external shopping platforms, users can click:
 
 The system opens the product's shopping link so the user can continue the purchase on the respective platform.
 
-🛒 6. Shopping Cart
+##🛒 6. Shopping Cart
 
 SellMate AI includes a cart system for managing selected products.
 
@@ -121,7 +121,7 @@ Example commands:
 Show my cart
 Remove running shoes
 Clear cart
-🤖 7. Agentic Commerce
+##🤖 7. Agentic Commerce
 
 The system follows an agent-based approach to understand shopping requests and perform appropriate actions.
 
@@ -134,59 +134,58 @@ Search for relevant products
 Rank suitable products
 Generate a useful response
 Allow the user to purchase or add products to the cart
-🏗️ System Architecture
-                 ┌─────────────────────┐
-                 │       User          │
-                 │ Natural Language    │
-                 │ Shopping Request    │
-                 └──────────┬──────────┘
-                            │
-                            ▼
-                 ┌─────────────────────┐
-                 │    React Frontend   │
-                 │     SellMate AI     │
-                 └──────────┬──────────┘
-                            │
-                       REST API
-                            │
-                            ▼
-                 ┌─────────────────────┐
-                 │    FastAPI Backend  │
-                 └──────────┬──────────┘
-                            │
-                            ▼
-                 ┌─────────────────────┐
-                 │   Commerce Agent    │
-                 │ Intent & Request    │
-                 │ Understanding       │
-                 └──────────┬──────────┘
-                            │
-              ┌─────────────┼─────────────┐
-              ▼             ▼             ▼
-       ┌────────────┐ ┌────────────┐ ┌────────────┐
-       │  Product   │ │ Comparison │ │    Cart    │
-       │  Search    │ │   Engine   │ │   System   │
-       └─────┬──────┘ └────────────┘ └────────────┘
-             │
-             ▼
-       ┌────────────┐
-       │  Product   │
-       │ Providers  │
-       └─────┬──────┘
-             │
-             ▼
-       ┌────────────┐
-       │ Product    │
-       │ Results    │
-       └─────┬──────┘
-             │
-             ▼
-       ┌─────────────────────┐
-       │ Recommendations     │
-       │ Price • Rating      │
-       │ Discount • Stock    │
-       └─────────────────────┘
-🧰 Technology Stack
+
+---
+
+# 🏗️ System Architecture
+
+The following architecture shows how the user request flows through the SellMate AI system.
+
+```text
+User
+  │
+  │ Natural Language Shopping Request
+  ▼
+React Frontend
+  │
+  │ REST API
+  ▼
+FastAPI Backend
+  │
+  ▼
+Commerce Agent
+  │
+  ├── Understand Shopping Intent
+  ├── Extract Product Requirements
+  ├── Extract Budget Constraints
+  │
+  ▼
+Product Search Engine
+  │
+  ├── Product Providers
+  ├── Product Search
+  └── Product Ranking
+  │
+  ▼
+Product Recommendations
+  │
+  ├── Price
+  ├── Rating
+  ├── Discount
+  ├── Availability
+  └── Purchase Link
+  │
+  ├───────────────┐
+  ▼               ▼
+Buy Now       Add to Cart
+                  │
+                  ▼
+             Shopping Cart
+```
+
+---
+
+#🧰 Technology Stack
 Frontend
 React.js
 JavaScript
@@ -210,8 +209,10 @@ Budget filtering
 Shopping cart
 Product purchase links
 Product availability
+---
 
-📁 Project Structure
+#📁 Project Structure
+```text
 SellMate-AI/
 │
 ├── backend/
@@ -238,3 +239,4 @@ SellMate-AI/
 │
 ├── .gitignore
 └── README.md
+```
