@@ -56,5 +56,5 @@ I need sports shoes under ₹2000
 Find the best rated shoes
 Show me products below ₹500
 2. Product Recommendations
-```
+
 **The AI assistant understands the user's shopping request and provides relevant product recommendations.**
