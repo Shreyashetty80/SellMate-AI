@@ -23,17 +23,19 @@ Users often need to:
 
 This process can be time-consuming and overwhelming.
 
-### 💡 Our Solution
+---
+
+## 💡 Our Solution
 
 SellMate AI acts as an intelligent shopping assistant that understands a user's shopping intent and helps them discover suitable products.
 
 Users can simply ask questions such as:
 
-> "Find running shoes under ₹3000"
+> Find running shoes under ₹3000
 
 or
 
-> "Show me backpacks under ₹1000"
+> Show me backpacks under ₹1000
 
 SellMate AI processes the request and provides relevant product recommendations.
 
@@ -45,7 +47,7 @@ SellMate AI processes the request and provides relevant product recommendations.
 
 Users can interact with SellMate AI using natural language.
 
-Example:
+Example queries:
 
 ```text
 Find running shoes under ₹3000
