@@ -378,81 +378,81 @@ The following architecture shows how a user's shopping request flows through the
 
 User
 
-&#x20; │
+│
 
-&#x20; │ Natural Language Shopping Request
+│ Natural Language Shopping Request
 
-&#x20; ▼
+▼
 
 React Frontend
 
-&#x20; │
+│
 
-&#x20; │ REST API
+│ REST API
 
-&#x20; ▼
+▼
 
 FastAPI Backend
 
-&#x20; │
+│
 
-&#x20; ▼
+▼
 
 Commerce Agent
 
-&#x20; │
+│
 
-&#x20; ├── Understand Shopping Intent
+├── Understand Shopping Intent
 
-&#x20; ├── Extract Product Requirements
+├── Extract Product Requirements
 
-&#x20; └── Extract Budget Constraints
+└── Extract Budget Constraints
 
-&#x20; │
+│
 
-&#x20; ▼
+▼
 
 Product Search Engine
 
-&#x20; │
+│
 
-&#x20; ├── Product Providers
+├── Product Providers
 
-&#x20; ├── Product Search
+├── Product Search
 
-&#x20; └── Product Ranking
+└── Product Ranking
 
-&#x20; │
+│
 
-&#x20; ▼
+▼
 
 Product Recommendations
 
-&#x20; │
+│
 
-&#x20; ├── Price
+├── Price
 
-&#x20; ├── Rating
+├── Rating
 
-&#x20; ├── Discount
+├── Discount
 
-&#x20; ├── Availability
+├── Availability
 
-&#x20; └── Purchase Link
+└── Purchase Link
 
-&#x20; │
+│
 
-&#x20; ├──────────────────┐
+├──────────────────┐
 
-&#x20; ▼                  ▼
+▼                  ▼
 
 Buy Now          Add to Cart
 
-&#x20;                      │
+                   │
 
-&#x20;                      ▼
+                   ▼
 
-&#x20;                 Shopping Cart
+              Shopping Cart
 
 ```
 

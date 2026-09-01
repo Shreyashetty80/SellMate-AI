@@ -20,6 +20,13 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [cartLoading, setCartLoading] = useState(false);
 
+  // =========================================================
+  // COMPARISON STATE
+  // =========================================================
+
+  const [selectedProducts, setSelectedProducts] = useState([]);
+  const [comparison, setComparison] = useState(null);
+
   const userId = "demo_user";
 
   // =========================================================
@@ -32,7 +39,7 @@ function App() {
   }, []);
 
   // =========================================================
-  // LOAD LOCAL PRODUCTS
+  // LOAD PRODUCTS
   // =========================================================
 
   const loadProducts = async () => {
@@ -62,6 +69,162 @@ function App() {
   };
 
   // =========================================================
+  // GET PRODUCT ID
+  // =========================================================
+
+  const getProductId = (product) => {
+    return (
+      product.id ||
+      product.product_id ||
+      `${product.name}-${product.platform || ""}`
+    );
+  };
+
+  // =========================================================
+  // TOGGLE PRODUCT FOR COMPARISON
+  // =========================================================
+
+  const toggleCompareProduct = (product) => {
+    const productId = getProductId(product);
+
+    setSelectedProducts((previous) => {
+      const alreadySelected = previous.some(
+        (item) => getProductId(item) === productId
+      );
+
+      if (alreadySelected) {
+        return previous.filter(
+          (item) => getProductId(item) !== productId
+        );
+      }
+
+      // Maximum 4 products
+      if (previous.length >= 4) {
+        alert("You can compare up to 4 products.");
+        return previous;
+      }
+
+      return [...previous, product];
+    });
+  };
+
+  // =========================================================
+  // CHECK IF PRODUCT IS SELECTED
+  // =========================================================
+
+  const isSelectedForComparison = (product) => {
+    const productId = getProductId(product);
+
+    return selectedProducts.some(
+      (item) => getProductId(item) === productId
+    );
+  };
+
+  // =========================================================
+  // CALCULATE DISCOUNT
+  // =========================================================
+
+  const getDiscount = (product) => {
+    const mrp = Number(product.mrp || 0);
+    const price = Number(product.price || 0);
+
+    if (mrp > price && mrp > 0) {
+      return Math.round(((mrp - price) / mrp) * 100);
+    }
+
+    return 0;
+  };
+
+  // =========================================================
+  // COMPARE PRODUCTS
+  // =========================================================
+
+  const compareSelectedProducts = () => {
+    if (selectedProducts.length < 2) {
+      alert("Please select at least 2 products to compare.");
+      return;
+    }
+
+    const prices = selectedProducts
+      .map((product) => Number(product.price || 0))
+      .filter((price) => price > 0);
+
+    const ratings = selectedProducts.map((product) =>
+      Number(product.rating || 0)
+    );
+
+    const maxPrice = prices.length > 0 ? Math.max(...prices) : 1;
+
+    const maxRating =
+      ratings.length > 0 ? Math.max(...ratings) : 5;
+
+    const comparedProducts = selectedProducts.map((product) => {
+      const price = Number(product.price || 0);
+      const rating = Number(product.rating || 0);
+
+      const priceScore =
+        maxPrice > 0 ? 1 - price / maxPrice : 0;
+
+      const ratingScore =
+        maxRating > 0 ? rating / maxRating : 0;
+
+      const valueScore =
+        priceScore * 0.4 + ratingScore * 0.6;
+
+      return {
+        ...product,
+        value_score: Number(valueScore.toFixed(3)),
+      };
+    });
+
+    const cheapest = [...comparedProducts].sort(
+      (a, b) =>
+        Number(a.price || Infinity) -
+        Number(b.price || Infinity)
+    )[0];
+
+    const highestRated = [...comparedProducts].sort(
+      (a, b) =>
+        Number(b.rating || 0) -
+        Number(a.rating || 0)
+    )[0];
+
+    const bestOverall = [...comparedProducts].sort(
+      (a, b) =>
+        Number(b.value_score || 0) -
+        Number(a.value_score || 0)
+    )[0];
+
+    setComparison({
+      products: comparedProducts,
+      cheapest,
+      highestRated,
+      bestOverall,
+    });
+
+    // Scroll to comparison section
+    setTimeout(() => {
+      const comparisonElement =
+        document.getElementById("comparison-section");
+
+      if (comparisonElement) {
+        comparisonElement.scrollIntoView({
+          behavior: "smooth",
+        });
+      }
+    }, 100);
+  };
+
+  // =========================================================
+  // CLEAR COMPARISON
+  // =========================================================
+
+  const clearComparison = () => {
+    setSelectedProducts([]);
+    setComparison(null);
+  };
+
+  // =========================================================
   // SEND MESSAGE
   // =========================================================
 
@@ -73,7 +236,6 @@ function App() {
     const userMessage = message.trim();
     const lowerMessage = userMessage.toLowerCase();
 
-    // Add user message
     setMessages((previous) => [
       ...previous,
       {
@@ -94,8 +256,9 @@ function App() {
         lowerMessage.includes("show my cart") ||
         lowerMessage.includes("show cart") ||
         lowerMessage.includes("view cart") ||
-        lowerMessage.includes("my cart") ||
-        lowerMessage.includes("check cart")
+        lowerMessage === "my cart" ||
+        lowerMessage.includes("check cart") ||
+        lowerMessage.includes("what is in my cart")
       ) {
         const response = await axios.get(
           `${API}/cart/${userId}`
@@ -109,7 +272,8 @@ function App() {
           !cartData.items ||
           cartData.items.length === 0
         ) {
-          cartMessage = "🛒 Your cart is currently empty.";
+          cartMessage =
+            "🛒 Your cart is currently empty.";
         } else {
           cartMessage =
             `🛒 You have ${cartData.total_items} item${
@@ -145,7 +309,9 @@ function App() {
 
       if (
         lowerMessage.includes("clear cart") ||
-        lowerMessage.includes("empty cart")
+        lowerMessage.includes("clear my cart") ||
+        lowerMessage.includes("empty cart") ||
+        lowerMessage.includes("empty my cart")
       ) {
         const response = await axios.delete(
           `${API}/cart/${userId}`
@@ -185,9 +351,20 @@ function App() {
         let productToRemove = null;
 
         for (const item of currentCart.items || []) {
+          const itemName = item.name.toLowerCase();
+
+          if (lowerMessage.includes(itemName)) {
+            productToRemove = item;
+            break;
+          }
+
+          const words = itemName.split(" ");
+
           if (
-            lowerMessage.includes(
-              item.name.toLowerCase()
+            words.some(
+              (word) =>
+                word.length > 3 &&
+                lowerMessage.includes(word)
             )
           ) {
             productToRemove = item;
@@ -266,6 +443,7 @@ function App() {
         `${API}/agent/recommend`,
         {
           message: userMessage,
+          user_id: userId,
         }
       );
 
@@ -380,7 +558,7 @@ function App() {
         {
           type: "ai",
           text:
-            "Unable to add the product to your cart.",
+            "Unable to add the product to the cart.",
           products: [],
         },
       ]);
@@ -390,7 +568,7 @@ function App() {
   };
 
   // =========================================================
-  // OPEN REAL PRODUCT
+  // OPEN PRODUCT
   // =========================================================
 
   const openProduct = (product) => {
@@ -629,9 +807,7 @@ function App() {
 
                 <button
                   onClick={() =>
-                    setMessage(
-                      "Show my cart"
-                    )
+                    setMessage("Show my cart")
                   }
                 >
                   🛒 Show my cart
@@ -683,27 +859,23 @@ function App() {
                           (product, productIndex) => {
 
                             const discount =
-                              product.mrp &&
-                              product.price &&
-                              Number(product.mrp) >
-                                Number(product.price)
-                                ? Math.round(
-                                    (
-                                      (
-                                        Number(product.mrp) -
-                                        Number(product.price)
-                                      ) /
-                                      Number(product.mrp)
-                                    ) * 100
-                                  )
-                                : 0;
+                              getDiscount(product);
+
+                            const selected =
+                              isSelectedForComparison(
+                                product
+                              );
 
                             return (
 
                               <div
-                                className="product-card"
+                                className={`product-card ${
+                                  selected
+                                    ? "compare-selected"
+                                    : ""
+                                }`}
                                 key={
-                                  product.id ||
+                                  getProductId(product) ||
                                   `${product.name}-${productIndex}`
                                 }
                               >
@@ -872,7 +1044,8 @@ function App() {
 
                                   <div className="availability">
 
-                                    {product.available ? (
+                                    {product.available !==
+                                      false ? (
                                       "✓ In Stock"
                                     ) : (
                                       "✕ Out of Stock"
@@ -881,37 +1054,67 @@ function App() {
                                   </div>
 
 
-                                  {/* ACTIONS */}
+                                  {/* =================================================
+                                      ACTIONS
+                                  ================================================= */}
+
                                   <div className="product-actions">
 
-  {/* BUY NOW */}
-  {product.product_url && (
-    <button
-      className="buy-button"
-      onClick={() => {
-        window.open(
-          product.product_url,
-          "_blank",
-          "noopener,noreferrer"
-        );
-      }}
-    >
-      🛒 Buy Now
-    </button>
-  )}
+                                    {/* BUY NOW */}
 
-  {/* ADD TO CART */}
-  <button
-    className="add-button"
-    disabled={
-      cartLoading || product.available === false
-    }
-    onClick={() => addProduct(product)}
-  >
-    + Add to Cart
-  </button>
+                                    {product.product_url && (
+                                      <button
+                                        className="buy-button"
+                                        onClick={() =>
+                                          openProduct(product)
+                                        }
+                                      >
+                                        🛒 Buy Now
+                                      </button>
+                                    )}
 
-</div>
+
+                                    {/* ADD TO CART */}
+
+                                    <button
+                                      className="add-button"
+                                      disabled={
+                                        cartLoading ||
+                                        product.available ===
+                                          false
+                                      }
+                                      onClick={() =>
+                                        addProduct(product)
+                                      }
+                                    >
+                                      + Add to Cart
+                                    </button>
+
+                                  </div>
+
+
+                                  {/* =================================================
+                                      COMPARE CHECKBOX
+                                  ================================================= */}
+
+                                  <label className="compare-checkbox">
+
+                                    <input
+                                      type="checkbox"
+                                      checked={selected}
+                                      onChange={() =>
+                                        toggleCompareProduct(
+                                          product
+                                        )
+                                      }
+                                    />
+
+                                    <span>
+                                      ⚖️ Compare
+                                    </span>
+
+                                  </label>
+
                                 </div>
 
                               </div>
@@ -931,9 +1134,7 @@ function App() {
             ))}
 
 
-            {/* =================================================
-                LOADING
-            ================================================= */}
+            {/* LOADING */}
 
             {loading && (
 
@@ -953,6 +1154,55 @@ function App() {
             )}
 
           </div>
+
+
+          {/* =================================================
+              COMPARISON CONTROLS
+          ================================================= */}
+
+          {selectedProducts.length > 0 && (
+
+            <div className="comparison-controls">
+
+              <div>
+                <strong>
+                  ⚖️ {selectedProducts.length}
+                  {" "}
+                  product
+                  {selectedProducts.length !== 1
+                    ? "s"
+                    : ""} selected
+                </strong>
+
+                <span>
+                  Select 2–4 products to compare.
+                </span>
+              </div>
+
+              <div className="comparison-buttons">
+
+                <button
+                  className="compare-button"
+                  onClick={compareSelectedProducts}
+                  disabled={
+                    selectedProducts.length < 2
+                  }
+                >
+                  ⚖️ Compare Selected
+                </button>
+
+                <button
+                  className="cancel-compare-button"
+                  onClick={clearComparison}
+                >
+                  Clear Selection
+                </button>
+
+              </div>
+
+            </div>
+
+          )}
 
 
           {/* =================================================
@@ -1123,6 +1373,503 @@ function App() {
         </aside>
 
       </main>
+
+
+      {/* =====================================================
+          COMPARISON RESULT
+      ===================================================== */}
+
+      {comparison && (
+
+        <section
+          id="comparison-section"
+          className="comparison-section"
+        >
+
+          <div className="comparison-header">
+
+            <div>
+              <h2>
+                ⚖️ Product Comparison
+              </h2>
+
+              <p>
+                Compare selected products and choose
+                the best option.
+              </p>
+            </div>
+
+            <button
+              className="clear-comparison"
+              onClick={clearComparison}
+            >
+              Clear Comparison
+            </button>
+
+          </div>
+
+
+          {/* =================================================
+              HIGHLIGHTS
+          ================================================= */}
+
+          <div className="comparison-highlights">
+
+            {/* BEST OVERALL */}
+
+            {comparison.bestOverall && (
+
+              <div className="highlight-card">
+
+                <div className="highlight-icon">
+                  🏆
+                </div>
+
+                <div>
+
+                  <span>
+                    Best Overall
+                  </span>
+
+                  <strong>
+                    {comparison.bestOverall.name}
+                  </strong>
+
+                  <small>
+                    Value Score:{" "}
+                    {comparison.bestOverall.value_score}
+                  </small>
+
+                </div>
+
+              </div>
+
+            )}
+
+
+            {/* CHEAPEST */}
+
+            {comparison.cheapest && (
+
+              <div className="highlight-card">
+
+                <div className="highlight-icon">
+                  💰
+                </div>
+
+                <div>
+
+                  <span>
+                    Cheapest
+                  </span>
+
+                  <strong>
+                    {comparison.cheapest.name}
+                  </strong>
+
+                  <small>
+                    {formatPrice(
+                      comparison.cheapest.price
+                    )}
+                  </small>
+
+                </div>
+
+              </div>
+
+            )}
+
+
+            {/* HIGHEST RATED */}
+
+            {comparison.highestRated && (
+
+              <div className="highlight-card">
+
+                <div className="highlight-icon">
+                  ⭐
+                </div>
+
+                <div>
+
+                  <span>
+                    Highest Rated
+                  </span>
+
+                  <strong>
+                    {comparison.highestRated.name}
+                  </strong>
+
+                  <small>
+                    {Number(
+                      comparison.highestRated.rating || 0
+                    ).toFixed(1)}{" "}
+                    / 5
+                  </small>
+
+                </div>
+
+              </div>
+
+            )}
+
+          </div>
+
+
+          {/* =================================================
+              COMPARISON TABLE
+          ================================================= */}
+
+          <div className="comparison-table-container">
+
+            <table className="comparison-table">
+
+              <thead>
+
+                <tr>
+
+                  <th>
+                    Feature
+                  </th>
+
+                  {comparison.products.map(
+                    (product) => (
+
+                      <th
+                        key={getProductId(product)}
+                      >
+
+                        <div className="comparison-product-name">
+
+                          {product.image ? (
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                            />
+                          ) : (
+                            <div className="comparison-product-icon">
+                              {getProductIcon(
+                                product.category
+                              )}
+                            </div>
+                          )}
+
+                          <span>
+                            {product.name}
+                          </span>
+
+                        </div>
+
+                      </th>
+
+                    )
+                  )}
+
+                </tr>
+
+              </thead>
+
+
+              <tbody>
+
+                {/* BRAND */}
+
+                <tr>
+
+                  <td>
+                    🏢 Brand
+                  </td>
+
+                  {comparison.products.map(
+                    (product) => (
+
+                      <td
+                        key={getProductId(product)}
+                      >
+                        {product.brand || "N/A"}
+                      </td>
+
+                    )
+                  )}
+
+                </tr>
+
+
+                {/* PLATFORM */}
+
+                <tr>
+
+                  <td>
+                    🏪 Platform
+                  </td>
+
+                  {comparison.products.map(
+                    (product) => (
+
+                      <td
+                        key={getProductId(product)}
+                      >
+                        {getPlatformLabel(
+                          product.platform
+                        )}
+                      </td>
+
+                    )
+                  )}
+
+                </tr>
+
+
+                {/* PRICE */}
+
+                <tr>
+
+                  <td>
+                    💰 Price
+                  </td>
+
+                  {comparison.products.map(
+                    (product) => (
+
+                      <td
+                        key={getProductId(product)}
+                      >
+                        <strong>
+                          {formatPrice(
+                            product.price
+                          )}
+                        </strong>
+                      </td>
+
+                    )
+                  )}
+
+                </tr>
+
+
+                {/* MRP */}
+
+                <tr>
+
+                  <td>
+                    💵 MRP
+                  </td>
+
+                  {comparison.products.map(
+                    (product) => (
+
+                      <td
+                        key={getProductId(product)}
+                      >
+                        {formatPrice(
+                          product.mrp
+                        )}
+                      </td>
+
+                    )
+                  )}
+
+                </tr>
+
+
+                {/* DISCOUNT */}
+
+                <tr>
+
+                  <td>
+                    🔖 Discount
+                  </td>
+
+                  {comparison.products.map(
+                    (product) => (
+
+                      <td
+                        key={getProductId(product)}
+                      >
+
+                        {getDiscount(product) > 0
+                          ? `${getDiscount(product)}% OFF`
+                          : "No discount"}
+
+                      </td>
+
+                    )
+                  )}
+
+                </tr>
+
+
+                {/* RATING */}
+
+                <tr>
+
+                  <td>
+                    ⭐ Rating
+                  </td>
+
+                  {comparison.products.map(
+                    (product) => (
+
+                      <td
+                        key={getProductId(product)}
+                      >
+
+                        {Number(
+                          product.rating || 0
+                        ) > 0
+                          ? `${Number(
+                              product.rating
+                            ).toFixed(1)} / 5`
+                          : "N/A"}
+
+                      </td>
+
+                    )
+                  )}
+
+                </tr>
+
+
+                {/* REVIEWS */}
+
+                <tr>
+
+                  <td>
+                    👥 Reviews
+                  </td>
+
+                  {comparison.products.map(
+                    (product) => (
+
+                      <td
+                        key={getProductId(product)}
+                      >
+
+                        {Number(
+                          product.rating_count || 0
+                        ).toLocaleString("en-IN")}
+
+                      </td>
+
+                    )
+                  )}
+
+                </tr>
+
+
+                {/* AVAILABILITY */}
+
+                <tr>
+
+                  <td>
+                    ✅ Availability
+                  </td>
+
+                  {comparison.products.map(
+                    (product) => (
+
+                      <td
+                        key={getProductId(product)}
+                      >
+
+                        {product.available !== false
+                          ? "✓ In Stock"
+                          : "✕ Out of Stock"}
+
+                      </td>
+
+                    )
+                  )}
+
+                </tr>
+
+
+                {/* VALUE SCORE */}
+
+                <tr>
+
+                  <td>
+                    🏆 Value Score
+                  </td>
+
+                  {comparison.products.map(
+                    (product) => (
+
+                      <td
+                        key={getProductId(product)}
+                      >
+
+                        <strong>
+                          {product.value_score}
+                        </strong>
+
+                      </td>
+
+                    )
+                  )}
+
+                </tr>
+
+
+                {/* BUY */}
+
+                <tr>
+
+                  <td>
+                    🛒 Action
+                  </td>
+
+                  {comparison.products.map(
+                    (product) => (
+
+                      <td
+                        key={getProductId(product)}
+                      >
+
+                        <div className="comparison-actions">
+
+                          {product.product_url && (
+                            <button
+                              className="buy-button"
+                              onClick={() =>
+                                openProduct(product)
+                              }
+                            >
+                              Buy Now
+                            </button>
+                          )}
+
+                          <button
+                            className="add-button"
+                            onClick={() =>
+                              addProduct(product)
+                            }
+                            disabled={
+                              cartLoading ||
+                              product.available === false
+                            }
+                          >
+                            Add to Cart
+                          </button>
+
+                        </div>
+
+                      </td>
+
+                    )
+                  )}
+
+                </tr>
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </section>
+
+      )}
 
 
       {/* =====================================================
